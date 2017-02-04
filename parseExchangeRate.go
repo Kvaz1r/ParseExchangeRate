@@ -116,6 +116,7 @@ func appMain(driver gxui.Driver) {
 	List := theme.CreateList()
 	List.SetAdapter(adapter)
 	List.SetOrientation(gxui.Vertical)
+	List.Select(adapter.ItemAt(0))
 	List.OnSelectionChanged(func(item gxui.AdapterItem) {
 		keystr = fmt.Sprint(item)
 	})
@@ -191,7 +192,7 @@ func save_data(start, end, stop, keystr string, diff int,
 		log.Fatal(err)
 	}
 	driver.Call(func() {
-		progressBar.SetProgress(100)
+		progressBar.SetProgress(0)
 		button.SetChecked(false)
 	})
 }
