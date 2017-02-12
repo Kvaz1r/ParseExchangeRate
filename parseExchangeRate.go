@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	stdmath "math"
 	"net/http"
 	"os"
 	"regexp"
@@ -35,12 +36,14 @@ type RawData struct {
 }
 
 type Data struct {
-	ExchangeRate float64
+	Salerate     float64
+	Purchaserate float64
 	Date         string
 }
 
 func (t *Data) String() string {
-	return t.Date + " " + fmt.Sprint(t.ExchangeRate) + "\n"
+	return t.Date + " " + fmt.Sprint(t.Salerate) +
+		" " + fmt.Sprint(t.Purchaserate) + "\n"
 }
 
 func appMain(driver gxui.Driver) {
@@ -53,6 +56,7 @@ func appMain(driver gxui.Driver) {
 
 	items := []string{"RUB", "EUR", "USD"}
 	keystr := items[0]
+	cdate, pdate := get_date()
 
 	innerLayout1 := theme.CreateLinearLayout()
 	innerLayout1.SetDirection(gxui.LeftToRight)
@@ -72,7 +76,7 @@ func appMain(driver gxui.Driver) {
 	label := theme.CreateLabel()
 	label.SetText("Введите начальную дату парсинга ")
 	textBox1 := theme.CreateTextBox()
-	textBox1.SetText("01.01.2012")
+	textBox1.SetText(pdate)
 
 	h1.AddChild(label)
 	h1.AddChild(textBox1)
@@ -84,7 +88,7 @@ func appMain(driver gxui.Driver) {
 	label2 := theme.CreateLabel()
 	label2.SetText("Введите конечную дату парсинга    ")
 	textBox2 := theme.CreateTextBox()
-	textBox2.SetText(get_current_date())
+	textBox2.SetText(cdate)
 
 	h2.AddChild(label2)
 	h2.AddChild(textBox2)
@@ -179,7 +183,7 @@ func save_data(start, end, stop, keystr string, diff int,
 			log.Fatalln("Incorrect date")
 		}
 		first := transformData(&data, keystr)
-		if first.ExchangeRate == 0.0 {
+		if stdmath.Min(first.Salerate, first.Purchaserate) == 0.0 {
 			break
 		}
 		str = addday(first.Date)
@@ -202,7 +206,8 @@ func transformData(r *RawData, key string) Data {
 	data.Date = r.Date
 	for _, v := range r.Exchangerate {
 		if temp := v.Currency; temp == key {
-			data.ExchangeRate = v.Purchaseratenb
+			data.Salerate = v.Salerate
+			data.Purchaserate = v.Purchaserate
 			break
 		}
 	}
@@ -223,12 +228,14 @@ func addday(str string) string {
 	return date
 }
 
-func get_current_date() string {
-	str := regexp.MustCompile("[.]").Split(time.Now().Local().Format("01.02.2006"), -1)
-	temp := str[0]
-	str[0] = str[1]
-	str[1] = temp
-	return strings.Join(str, ".")
+func get_date() (string, string) {
+	date := regexp.MustCompile("[.]").Split(time.Now().Local().Format("01.02.2006"), -1)
+	date[0], date[1] = date[1], date[0]
+	cur := strings.Join(date, ".")
+	str := time.Now().Local().AddDate(-1, 0, 0).Format("01.02.2006")
+	date = regexp.MustCompile("[.]").Split(str, -1)
+	date[0], date[1] = date[1], date[0]
+	return cur, strings.Join(date, ".")
 }
 
 func checkError(err error) {
